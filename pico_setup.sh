@@ -20,7 +20,7 @@ OUTDIR="$(pwd)/pico"
 GIT_DEPS="git"
 SDK_DEPS="cmake gcc-arm-none-eabi gcc g++ ninja-build"
 OPENOCD_DEPS="gdb-multiarch automake autoconf build-essential texinfo libtool libftdi-dev libusb-1.0-0-dev libjim-dev pkg-config libgpiod-dev"
-OPENOCD_TAG="sdk-2.2.0"
+OPENOCD_TAG="sdk-2.3.0"
 UART_DEPS="minicom"
 
 # Build full list of dependencies
