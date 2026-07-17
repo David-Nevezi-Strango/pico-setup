@@ -16,11 +16,12 @@ JNUM=4
 # Where will the output go?
 OUTDIR="$(pwd)/pico"
 
+SDK_TAG="2.2.0"
 # Install dependencies
 GIT_DEPS="git"
 SDK_DEPS="cmake gcc-arm-none-eabi gcc g++ ninja-build"
 OPENOCD_DEPS="gdb-multiarch automake autoconf build-essential texinfo libtool libftdi-dev libusb-1.0-0-dev libjim-dev pkg-config libgpiod-dev"
-OPENOCD_TAG="sdk-2.3.0"
+OPENOCD_TAG="sdk-$SDK_TAG"
 UART_DEPS="minicom"
 
 # Build full list of dependencies
@@ -45,7 +46,8 @@ cd $OUTDIR
 GITHUB_PREFIX="https://github.com/raspberrypi/"
 GITHUB_SUFFIX=".git"
 SDK_BRANCH="master"
-
+# SDK_TAG="2.2.0"
+# SDK_BRANCH="tags/v2.2.0-4"
 for REPO in sdk examples extras playground
 do
     DEST="$OUTDIR/pico-$REPO"
@@ -56,9 +58,13 @@ do
         REPO_URL="${GITHUB_PREFIX}pico-${REPO}${GITHUB_SUFFIX}"
         echo "Cloning $REPO_URL"
         git clone -b $SDK_BRANCH $REPO_URL
-
         # Any submodules
         cd $DEST
+        if [[ "$REPO" == "sdk" ]]; then
+            git checkout tags/$SDK_TAG
+        else
+            git checkout tags/sdk-$SDK_TAG
+        fi
         git submodule update --init
         cd $OUTDIR
 
@@ -79,25 +85,35 @@ source ~/.bashrc
 for REPO in picotool debugprobe
 do
     DEST="$OUTDIR/$REPO"
-    REPO_URL="${GITHUB_PREFIX}${REPO}${GITHUB_SUFFIX}"
-    if [[ "$REPO" == "picotool" ]]; then
-      git clone -b $SDK_BRANCH $REPO_URL
+    
+    if [ -d $DEST ]; then
+        echo "$DEST already exists so skipping"
     else
-      git clone $REPO_URL
+        REPO_URL="${GITHUB_PREFIX}${REPO}${GITHUB_SUFFIX}"
+        if [[ "$REPO" == "picotool" ]]; then
+        git clone -b $SDK_BRANCH $REPO_URL
+        else
+        git clone $REPO_URL
+        fi
+
+        # Build both
+        cd $DEST
+        if [[ "$REPO" == "picotool" ]]; then
+            git checkout tags/$SDK_TAG
+        else
+            git checkout tags/$REPO-v$SDK_TAG
+        fi
+        git submodule update --init
+        cmake -S . -B build -GNinja
+        cmake --build build
+
+        if [[ "$REPO" == "picotool" ]]; then
+            echo "Installing picotool"
+            sudo cmake --install build
+        fi
+
+        cd $OUTDIR
     fi
-
-    # Build both
-    cd $DEST
-    git submodule update --init
-    cmake -S . -B build -GNinja
-    cmake --build build
-
-    if [[ "$REPO" == "picotool" ]]; then
-        echo "Installing picotool"
-        sudo cmake --install build
-    fi
-
-    cd $OUTDIR
 done
 
 # Build blink and hello world for default boards
@@ -106,7 +122,7 @@ for board in pico pico_w pico2 pico2_w
 do
     build_dir=build_$board
     cmake -S . -B $build_dir -GNinja -DPICO_BOARD=$board -DCMAKE_BUILD_TYPE=Debug
-    examples="blink hello_serial hello_usb"
+    examples="blink hello_serial"
     echo "Building $examples for $board"
     cmake --build $build_dir --target $examples
 done
