@@ -15,7 +15,11 @@ done
 shift "$(($OPTIND -1))"
 # Exit on error
 set -e
-echo "Installing version $VERSION"
+if [[ "$VERSION" != "latest"]]; then
+    echo "Installing version $VERSION"
+else
+    echo "Installing latest version"
+fi
 
 if grep -q Raspberry /proc/cpuinfo; then
     echo "Running on a Raspberry Pi"
