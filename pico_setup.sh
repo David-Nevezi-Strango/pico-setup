@@ -1,7 +1,21 @@
 #!/bin/bash
 
+VERSION="latest"
+while getopts 'v:h' opt; do
+  case "$opt" in
+    v)
+      VERSION="$OPTARG"
+      ;;
+    ?|h)
+      echo "Usage: $(basename $0) [-v] <tag>"
+      exit 1
+      ;;
+  esac
+done
+shift "$(($OPTIND -1))"
 # Exit on error
 set -e
+echo "Installing version $VERSION"
 
 if grep -q Raspberry /proc/cpuinfo; then
     echo "Running on a Raspberry Pi"
@@ -16,7 +30,7 @@ JNUM=4
 # Where will the output go?
 OUTDIR="$(pwd)/pico"
 
-SDK_TAG="2.2.0"
+SDK_TAG="$VERSION"
 # Install dependencies
 GIT_DEPS="git"
 SDK_DEPS="cmake gcc-arm-none-eabi gcc g++ ninja-build"
@@ -60,10 +74,12 @@ do
         git clone -b $SDK_BRANCH $REPO_URL
         # Any submodules
         cd $DEST
-        if [[ "$REPO" == "sdk" ]]; then
-            git checkout tags/$SDK_TAG
-        else
-            git checkout tags/sdk-$SDK_TAG
+        if [[ "$VERSION" != "latest" ]]; then
+            if [[ "$REPO" == "sdk" ]]; then
+                git checkout tags/$SDK_TAG
+            else
+                git checkout tags/sdk-$SDK_TAG
+            fi
         fi
         git submodule update --init
         cd $OUTDIR
@@ -98,10 +114,12 @@ do
 
         # Build both
         cd $DEST
-        if [[ "$REPO" == "picotool" ]]; then
-            git checkout tags/$SDK_TAG
-        else
-            git checkout tags/$REPO-v$SDK_TAG
+        if [[ "$VERSION" != "latest" ]]; then
+            if [[ "$REPO" == "picotool" ]]; then
+                git checkout tags/$SDK_TAG
+            else
+                git checkout tags/$REPO-v$SDK_TAG
+            fi
         fi
         git submodule update --init
         cmake -S . -B build -GNinja
