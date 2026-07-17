@@ -15,7 +15,7 @@ done
 shift "$(($OPTIND -1))"
 # Exit on error
 set -e
-if [[ "$VERSION" != "latest"]]; then
+if [[ "$VERSION" != "latest" ]]; then
     echo "Installing version $VERSION"
 else
     echo "Installing latest version"
